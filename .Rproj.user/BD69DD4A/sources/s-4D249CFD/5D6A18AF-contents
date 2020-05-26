@@ -1,0 +1,109 @@
+library(httr)
+library(dplyr)
+library(purrr)
+library(tidytext)
+
+#------------------------------------------------------------------------------------------------------#
+#  This script performs topic models on the League of Legends items, and tries to make decisons        #
+#  about what items to optimize for play style                                                         #
+#------------------------------------------------------------------------------------------------------#
+
+APIKEY <- 'RGAPI-c50b5f11-a5cd-4b99-a39f-bfd01bf8d781'
+
+request <- paste0("http://ddragon.leagueoflegends.com/cdn/6.24.1/data/en_US/item.json?api_key=",APIKEY)
+
+item_request <- GET(request)
+item_response_content <- content(item_request)
+
+#-----------------------------------------------------------------------------------------------------#
+#   Create data frame with basic item text descriptions                                               #
+#-----------------------------------------------------------------------------------------------------#
+
+item_df1 <- data_frame(item_name=character(0),item_text=character(0),item_desc=character(0))
+
+for (i in 1:length(item_response_content$data))  {
+  
+  item_name <- item_response_content$data[[i]]$name
+  item_text <- item_response_content$data[[i]]$plaintext
+  item_desc <- gsub("<[^>]+>", " ", item_response_content$data[[i]]$description)
+
+  #------------   Stuff items into data frame   --------------------------#
+  s_item <- data_frame(item_name=item_name,item_text=item_text,item_desc=item_desc)
+  item_df1 <- bind_rows(item_df1,s_item)
+  
+  
+}
+
+#----------------------------------------------------------------------------------------#
+#  Item stats                                                                            #
+#----------------------------------------------------------------------------------------#
+
+stats_df <- data_frame(item_name=character(0),item_stat)
+
+for (i in 1:length(item_response_content$data))  {
+  
+  #------------  Check for data in stats list element   ------------------#
+  if (length(item_response_content$data[[i]]$stats) > 0) {
+  
+      item_name <- item_response_content$data[[i]]$name
+  
+      for (k in 1:length(item_response_content$data[[i]]$stats))  {
+        
+        item_stat <- item_response_content$data[[i]]$stats[[k]]
+        
+        #----------- Put into data frame   -------------------#
+        s_stat <- data_frame(item_name=item_name,item_stat=item_stat)
+        stats_df <- bind_rows(stats_df,s_stat)
+        
+        
+      }  #------   End stat content data frame  ---------#
+  
+  }  #------   End stats conditional data check   ---------#
+  
+}  #------------   End main content loop   ---------#
+
+
+#----------------------------------------------------------------------------------------#
+#  Item tags                                                                            #
+#----------------------------------------------------------------------------------------#
+
+tags_df <- data_frame(item_name=character(0),item_tag)
+
+for (i in 1:length(item_response_content$data))  {
+  
+  #------------  Check for data in stats list element   ------------------#
+  if (length(item_response_content$data[[i]]$tags) > 0) {
+    
+    item_name <- item_response_content$data[[i]]$name
+    
+    for (k in 1:length(item_response_content$data[[i]]$tags))  {
+      
+      item_tag <- item_response_content$data[[i]]$tags[[k]]
+      
+      #----------- Put into data frame   -------------------#
+      s_tag <- data_frame(item_name=item_name,item_tag=item_tag)
+      tags_df <- bind_rows(tags_df,s_tag)
+      
+      
+    }  #------   End tags content data frame  ---------#
+    
+  }  #------   End tags conditional data check   ---------#
+  
+}  #------------   End main content loop   ---------#
+
+#-----------------------------------------------------------------------------------------#
+#   Count the number of tags                                                              #
+#-----------------------------------------------------------------------------------------3
+
+tag_count <- tags_df %>%
+             group_by(item_tag) %>%
+             summarise(tag_count = n()) %>%
+             arrange(desc(tag_count))
+
+
+#---------   Review some item abilites   ----------------------------#
+spell_block <- tags_df %>% filter(item_tag=='SpellBlock')
+magic_pen <- tags_df %>% filter(item_tag=='MagicPenetration')
+critical_strike <- tags_df %>% filter(item_tag=='CriticalStrike')
+cooldown <- tags_df %>% filter(item_tag=='CooldownReduction')
+lifesteal <- tags_df %>% filter(item_tag=='LifeSteal')

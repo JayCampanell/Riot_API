@@ -1,0 +1,2 @@
+
+jayurl3 <- paste0("https://na1.api.riotgames.com/lol/match/v4/matches/3434990668?api_key=RGAPI-db2e941a-d013-4998-97bf-32e719c094ad", APIkey)
