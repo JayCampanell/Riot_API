@@ -3,7 +3,7 @@ library(httr)
 library(tidyverse)
 library(anytime)
 
-APIkey <- "RGAPI-db2e941a-d013-4998-97bf-32e719c094ad"
+APIkey <- "#####"
 
 
 jayurl2 <- paste0("https://na1.api.riotgames.com/lol/match/v4/timelines/by-match/3434990668?api_key=", APIkey)
